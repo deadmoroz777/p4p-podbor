@@ -280,7 +280,7 @@ function copy(text,note){
 $("pg-ft").onclick=function(){var o=$("pg-top").classList.toggle("open");this.classList.toggle("open",o)};
 $("pg-link").onclick=function(){var m=MODEL;MODEL="";var u=base()+toQuery();MODEL=m;copy(u,$("pg-ok"))};
 $("pg-reset").onclick=function(){var c=F.cat;F=blank();F.cat=c;syncUrl();init();render()};
-function start(){setFromUrl();init();render();if(MODEL&&V.some(function(v){return v.model===MODEL}))openModel(MODEL,"",false)}
+function start(){setFromUrl();$("pg-top").classList.add("open");$("pg-ft").classList.add("open");init();render();if(MODEL&&V.some(function(v){return v.model===MODEL}))openModel(MODEL,"",false)}
 function fetchCat(cat){
   var all=[],seen={},page=1;
   function next(){
