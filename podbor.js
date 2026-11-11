@@ -51,7 +51,7 @@ function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return
 function latin(s){return s.replace(/[МХС]/g,function(c){return{"М":"M","Х":"X","С":"S"}[c]})}
 function parseSize(raw){
   var s=latin((raw||"").trim()),m=s.match(/(\d+)\s*(унц|oz)/i)||s.match(/^(\d+)$/);
-  if(m){var oz=+m[1],small=/-\s*S\b/i.test(s);return{oz:oz,size:oz+" oz"+(small?" (S)":""),letter:""}}
+  if(m){var oz=+m[1],small=/-\s*S\b/i.test(s);return{oz:oz,small:small,size:oz+" oz"+(small?" (S)":""),letter:""}}
   s=s.replace(/^[:\s]+/,"");return{oz:0,size:s.toUpperCase(),letter:s.toUpperCase()}}
 function normSize(raw){
   var s=latin((raw||"").trim()).replace(/^[:\s]+/,"");if(!s)return{size:"",key:""};
@@ -62,7 +62,7 @@ var ORD=["XS","S","S/M","M","L","L/XL","XL","2XL"];
 function sizeCmp(a,b){var x=ORD.indexOf(a),y=ORD.indexOf(b);if(x>=0&&y>=0)return x-y;var p=parseFloat(String(a).replace(",",".")),q=parseFloat(String(b).replace(",","."));if(!isNaN(p)&&!isNaN(q)&&p!==q)return p-q;return a<b?-1:a>b?1:0}
 function normColor(c){c=(c||"").trim().replace(/\s*\/\s*/g,"/").replace(/^:/,"");if(c==="?")c="";return c.charAt(0).toUpperCase()+c.slice(1)}
 var V=[],LIVE={};
-function fromEmbeddedGloves(){return D.rows.map(function(r){return{cat:"gloves",model:r[0],color:r[1],size:r[2],skey:"",oz:r[3],letter:r[4],stock:!!r[5],price:r[6],photo:D.photos[r[7]],sub:""}})}
+function fromEmbeddedGloves(){return D.rows.map(function(r){return{cat:"gloves",model:r[0],color:r[1],size:r[2],skey:"",oz:r[3],small:/-\s*S\b|\(S\)/i.test(String(r[2])),letter:r[4],stock:!!r[5],price:r[6],photo:D.photos[r[7]],sub:""}})}
 function fromApi(products,cat){
   var out=[];
   products.forEach(function(p){
@@ -75,10 +75,11 @@ function fromApi(products,cat){
       var q=String(e.quantity==null?"":e.quantity).trim(),st=q===""||(!isNaN(parseFloat(q))&&parseFloat(q)>0);
       var col=normColor(low["цвет"]);if(!col&&(cat==="mouth"||cat==="bags"))col=titleColor(name);
       var o={cat:cat,model:name,color:col,size:"",skey:"",oz:0,letter:"",stock:st,price:parseFloat(e.price)||0,photo:e.img||first,sub:sub};
-      if(cat==="gloves"){var sz=parseSize(low["размер"]||"");o.size=sz.size;o.oz=sz.oz;o.letter=sz.letter}
+      if(cat==="gloves"){var sz=parseSize(low["размер"]||"");o.size=sz.size;o.oz=sz.oz;o.small=sz.small;o.letter=sz.letter}
       else{var ns=normSize(low["размер"]||"");o.size=ns.size;o.skey=ns.key}
       out.push(o)})});
   return out}
+function ozk(v){return v.oz?(v.small?v.oz+"S":String(v.oz)):""}
 function metaOf(m){return D.meta[m]||{k:"Другое",c:"unknown",b:[],g:[],t:""}}
 function catOfModel(m){var v=V.filter(function(x){return x.model===m})[0];return v?v.cat:"gloves"}
 function prodUrl(model,c){
@@ -108,7 +109,7 @@ function setFromUrl(){
     if(F.cat==="gloves"){
       if(KC[x]){if(!any(F.kind))F.kind[KC[x]]=true}
       else if(x==="velcro"||x==="lace")F.clo[x]=true;
-      else if(/^\d+$/.test(x))F.oz[+x]=true;
+      else if(/^\d+s?$/.test(x))F.oz[x.toUpperCase()]=true;
       else if(/^(s|m|l|xl)$/.test(x))F.let[x.toUpperCase()]=true}
     else if(F.cat!=="set"){if(subCode(F.cat,x))F.sub[x]=true;else F.sz[x]=true}});
   MODEL="";var m=p.get("m");
@@ -119,7 +120,7 @@ function toQuery(){
   if(F.cat==="gloves"){
     if(k)for(var c in KC)if(KC[c]===k)parts.push(c);
     keys(F.clo).forEach(function(c){parts.push(c)});
-    keys(F.oz).sort(function(a,b){return a-b}).forEach(function(o){parts.push(o)});
+    keys(F.oz).sort(function(a,b){return parseFloat(a)-parseFloat(b)||(a<b?-1:1)}).forEach(function(o){parts.push(String(o).toLowerCase())});
     keys(F.let).forEach(function(l){parts.push(l.toLowerCase())})}
   else if(F.cat!=="set"){keys(F.sub).forEach(function(s){parts.push(s)});keys(F.sz).forEach(function(s){parts.push(s)})}
   COL.forEach(function(c){if(F.col[c[0]])parts.push(c[1])});
@@ -139,7 +140,7 @@ function chips(id,items,getOn,tog){
     else{s.className="ch"+(getOn(it.v)?" on":"");s.innerHTML=(it.d?'<i class="dot" style="background:'+it.d+'"></i>':"")+esc(it.t)}
     s.onclick=function(){tog(it.v);init();syncUrl();render()};el.appendChild(s)})}
 var CFG={
- "Спарринговые":{oz:[12,14,16,18,20],let:false,clo:true},
+ "Спарринговые":{oz:[12,14,16,"16S",18,20],let:false,clo:true},
  "Снарядные":{oz:[8,10],let:true,clo:true},
  "Детские":{oz:[8,10],let:false,clo:true},
  "Боевые":{oz:[8,10],let:false,clo:false}};
@@ -163,7 +164,7 @@ function show(id,on){$(id).style.display=on?"":"none"}
 function init(){
   var cat=F.cat,gl=cat==="gloves",ks=keys(F.kind),cfg=gl&&ks.length===1?CFG[ks[0]]:null;
   if(cfg){
-    Object.keys(F.oz).forEach(function(k){if(cfg.oz.indexOf(+k)<0)delete F.oz[k]});
+    Object.keys(F.oz).forEach(function(k){if(cfg.oz.map(String).indexOf(String(k))<0)delete F.oz[k]});
     if(!cfg.let)F.let={};
     if(!cfg.clo)F.clo={}}
   Object.keys(F.let).forEach(function(k){if(["S","M","L","XL"].indexOf(k)<0)delete F.let[k]});
@@ -178,10 +179,10 @@ function init(){
   show("row-clo",gl&&(!cfg||cfg.clo));show("row-oz",gl);show("row-let",gl&&(!cfg||cfg.let));
   if(gl){
     chips("f-clo",[{v:"velcro",t:"На липучке"},{v:"lace",t:"На шнуровке"}],function(v){return F.clo[v]},function(v){F.clo[v]=!F.clo[v]});
-    var ozs=[],lets=[];
-    P.forEach(function(v){if(v.oz&&ozs.indexOf(v.oz)<0)ozs.push(v.oz);if(v.letter&&lets.indexOf(v.letter)<0)lets.push(v.letter)});
-    ozs.sort(function(a,b){return a-b});
-    if(cfg)ozs=ozs.filter(function(o){return cfg.oz.indexOf(o)>=0});
+    var ozs=[],lets=[];function oks(v){return v.small&&metaOf(v.model).k!=="Спарринговые"?"":ozk(v)}
+    P.forEach(function(v){var ok=oks(v);if(ok&&ozs.indexOf(ok)<0)ozs.push(ok);if(v.letter&&lets.indexOf(v.letter)<0)lets.push(v.letter)});
+    ozs.sort(function(a,b){return parseFloat(a)-parseFloat(b)||(String(a)<String(b)?-1:1)});
+    if(cfg)ozs=ozs.filter(function(o){return cfg.oz.map(String).indexOf(String(o))>=0});
     lets=lets.filter(function(l){return["S","M","L","XL"].indexOf(l)>=0}).sort(sizeCmp);
     chips("f-oz",ozs.map(function(o){return{v:o,t:o+" oz"}}),function(v){return F.oz[v]},function(v){F.oz[v]=!F.oz[v]});
     chips("f-let",lets.map(function(l){return{v:l,t:l}}),function(v){return F.let[v]},function(v){F.let[v]=!F.let[v]})}
@@ -214,8 +215,8 @@ function render(){
     if(gl){
       if(any(F.kind)&&!F.kind[m.k])return false;
       if(any(F.clo)&&!F.clo[m.c])return false;
-      if(any(F.oz)&&any(F.let)){if(!F.oz[v.oz]&&!F.let[v.letter])return false}
-      else{if(any(F.oz)&&!F.oz[v.oz])return false;if(any(F.let)&&!F.let[v.letter])return false}}
+      if(any(F.oz)&&any(F.let)){if(!F.oz[ozk(v)]&&!F.let[v.letter])return false}
+      else{if(any(F.oz)&&!F.oz[ozk(v)])return false;if(any(F.let)&&!F.let[v.letter])return false}}
     else if(!set){
       if(any(F.sub)&&!F.sub[v.sub])return false;
       if(any(F.sz)&&!F.sz[v.skey])return false}
