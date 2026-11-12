@@ -110,7 +110,7 @@ function setFromUrl(){
       if(KC[x]){if(!any(F.kind))F.kind[KC[x]]=true}
       else if(x==="velcro"||x==="lace")F.clo[x]=true;
       else if(/^\d+s?$/.test(x))F.oz[x.toUpperCase()]=true;
-      else if(/^(s|m|l|xl)$/.test(x))F.let[x.toUpperCase()]=true}
+      else if(/^(m|l|xl)$/.test(x))F.let[x.toUpperCase()]=true}
     else if(F.cat!=="set"){if(subCode(F.cat,x))F.sub[x]=true;else F.sz[x]=true}});
   MODEL="";var m=p.get("m");
   if(m){var all={};V.forEach(function(v){all[slug(v.model)]=v.model});Object.keys(D.meta).forEach(function(k){all[slug(k)]=k});if(all[m.toLowerCase()])MODEL=all[m.toLowerCase()]}}
@@ -167,7 +167,7 @@ function init(){
     Object.keys(F.oz).forEach(function(k){if(cfg.oz.map(String).indexOf(String(k))<0)delete F.oz[k]});
     if(!cfg.let)F.let={};
     if(!cfg.clo)F.clo={}}
-  Object.keys(F.let).forEach(function(k){if(["S","M","L","XL"].indexOf(k)<0)delete F.let[k]});
+  Object.keys(F.let).forEach(function(k){if(["M","L","XL"].indexOf(k)<0)delete F.let[k]});
   chips("f-cat",CATS.map(function(c){return{v:c.id,t:c.t}}).concat([{v:"set",t:"🎨 Подбор по цвету"}]),function(v){return F.cat===v},function(v){F.cat=v;F.kind={};F.clo={};F.oz={};F.let={};F.sz={};F.sub={}});
   var tb=$("pg-tb"),tk=gl?(cfg?TABLES[ks[0]]:(ks.length?null:TABLES[""])):(cat==="mouth"?mouthTable():TB2[cat]);
   tb.className="tb"+(tk&&tk.tr?" tr":"");if(tk&&tk.rows.length){tb.style.display="block";tb.innerHTML="<h5>"+esc(tk.t)+"</h5><table>"+(tk.h?"<tr>"+tk.h.map(function(x){return"<th>"+esc(x)+"</th>"}).join("")+"</tr>":"")+tk.rows.map(function(r){return"<tr>"+r.map(function(x){return"<td>"+esc(x)+"</td>"}).join("")+"</tr>"}).join("")+"</table>"+(tk.note?'<div class="nt">'+esc(tk.note)+"</div>":"")}else{tb.style.display="none";tb.innerHTML=""}
@@ -183,7 +183,7 @@ function init(){
     P.forEach(function(v){var ok=oks(v);if(ok&&ozs.indexOf(ok)<0)ozs.push(ok);if(v.letter&&lets.indexOf(v.letter)<0)lets.push(v.letter)});
     ozs.sort(function(a,b){return parseFloat(a)-parseFloat(b)||(String(a)<String(b)?-1:1)});
     if(cfg)ozs=ozs.filter(function(o){return cfg.oz.map(String).indexOf(String(o))>=0});
-    lets=lets.filter(function(l){return["S","M","L","XL"].indexOf(l)>=0}).sort(sizeCmp);
+    lets=lets.filter(function(l){return["M","L","XL"].indexOf(l)>=0}).sort(sizeCmp);
     chips("f-oz",ozs.map(function(o){return{v:o,t:o+" oz"}}),function(v){return F.oz[v]},function(v){F.oz[v]=!F.oz[v]});
     chips("f-let",lets.map(function(l){return{v:l,t:l}}),function(v){return F.let[v]},function(v){F.let[v]=!F.let[v]})}
   // размеры других разделов
@@ -211,7 +211,7 @@ function render(){
   if(set&&!any(F.col)){CARDS=[];$("pg-cnt").textContent="";grid.innerHTML='<div class="hint" style="grid-column:1/-1">Выберите цвет выше — покажу всё, что есть в этом цвете: перчатки, шлем, бандаж, обувь, бинты и другое. Можно выбрать несколько цветов.</div>';return}
   var vs=pool().filter(function(v){
     var m=metaOf(v.model);
-    if(F.stock&&!v.stock)return false;
+    if(F.stock&&!v.stock)return false;if(gl&&v.letter==="S")return false;
     if(gl){
       if(any(F.kind)&&!F.kind[m.k])return false;
       if(any(F.clo)&&!F.clo[m.c])return false;
