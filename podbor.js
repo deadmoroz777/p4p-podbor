@@ -99,7 +99,7 @@ function any(o){return keys(o).length>0}
 function subCode(cat,x){var a=SUBS[cat]||[];for(var i=0;i<a.length;i++)if(a[i][0]===x)return x;return""}
 function setFromUrl(){
   var p=new URLSearchParams(location.search),rest=[];F=blank();
-  (p.get("q")||"").toLowerCase().split("-").forEach(function(x){
+  (p.has("q")?(p.get("q")||""):((document.getElementById("podbor")||{getAttribute:function(){return""}}).getAttribute("data-q")||"")).toLowerCase().split("-").forEach(function(x){
     if(!x)return;
     if(x==="set"||(CAT[x]&&x!=="gloves"))F.cat=x;
     else if(COLBY[x])F.col[COLBY[x]]=true;
